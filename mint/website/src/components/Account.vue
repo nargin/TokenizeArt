@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { useAccount, useDisconnect } from '@wagmi/vue'
 
 const { address, chainId, status } = useAccount()

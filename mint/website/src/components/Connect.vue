@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { useChainId, useConnect } from '@wagmi/vue'
 
 const chainId = useChainId()

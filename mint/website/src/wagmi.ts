@@ -1,12 +1,10 @@
 import { http, createConfig } from '@wagmi/vue'
-import { mainnet, sepolia } from '@wagmi/vue/chains'
+import { sepolia } from '@wagmi/vue/chains'
 
 export const config = createConfig({
-  chains: [mainnet, sepolia],
-  connectors: [
-  ],
+  chains: [sepolia],
+  connectors: [],
   transports: {
-    [mainnet.id]: http(),
     [sepolia.id]: http(),
   },
 })
