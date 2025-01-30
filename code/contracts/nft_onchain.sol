@@ -1,99 +1,110 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/Base64.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract BasicNFT is ERC721 {
-    using Strings for uint256;
+contract VeigarOnChain is ERC721 {
+    struct NFTData {
+        string svg;
+        string name;
+        string description;
+        string[] traitTypes;
+        string[] traitValues;
+    }
 
-    // Store SVG data for each token
-    mapping(uint256 => string) private tokenSVGs;
+    mapping(uint256 => NFTData) private _tokenData;
 
-    // Store additional metadata
-    mapping(uint256 => string) private tokenNames;
-    mapping(uint256 => string) private tokenDescriptions;
-
-    uint256 private _tokenIds;
+    uint256 private _tokenIdCounter;
 
     constructor() ERC721("Veigar42Stacks", "V42AP") {}
 
-    // Add this function to check if a token exists
-    function _exists(uint256 tokenId) internal view virtual returns (bool) {
-        return bytes(tokenSVGs[tokenId]).length > 0;
-    }
-
-    function mintNFT(
+    function mint(
         string memory svg,
         string memory name,
-        string memory description
-    ) public returns (uint256) {
-        _tokenIds++;
-        uint256 newTokenId = _tokenIds;
+        string memory description,
+        string[] memory traitTypes,
+        string[] memory traitValues
+    ) public {
+        require(
+            traitTypes.length == traitValues.length,
+            "Mismatched attributes"
+        );
 
-        // Store the SVG and metadata
-        tokenSVGs[newTokenId] = svg;
-        tokenNames[newTokenId] = name;
-        tokenDescriptions[newTokenId] = description;
+        uint256 tokenId = _tokenIdCounter;
+        _tokenIdCounter++;
 
-        _safeMint(msg.sender, newTokenId);
-        return newTokenId;
+        string memory fullName = string(
+            abi.encodePacked(name, "#", Strings.toString(_tokenIdCounter))
+        );
+
+        _tokenData[tokenId] = NFTData({
+            svg: svg,
+            name: fullName,
+            description: description,
+            traitTypes: traitTypes,
+            traitValues: traitValues
+        });
+
+        _safeMint(msg.sender, tokenId);
     }
 
     function tokenURI(
         uint256 tokenId
-    ) public view virtual override returns (string memory) {
-        require(_exists(tokenId), "Token does not exist");
+    ) public view override returns (string memory) {
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
 
-        // Create the SVG image with base64 encoding
-        string memory svgBase64 = Base64.encode(bytes(tokenSVGs[tokenId]));
-        string memory imageURI = string(
-            abi.encodePacked("data:image/svg+xml;base64,", svgBase64)
-        );
+        NFTData memory data = _tokenData[tokenId];
 
-        // Create the JSON metadata
-        string memory json = Base64.encode(
-            bytes(
-                string(
-                    abi.encodePacked(
-                        "{",
-                        '"name": "',
-                        tokenNames[tokenId],
-                        '",',
-                        '"description": "',
-                        tokenDescriptions[tokenId],
-                        '",',
-                        '"image": "',
-                        imageURI,
-                        '",',
-                        '"attributes": []',
-                        "}"
-                    )
-                )
+        string memory image = string(
+            abi.encodePacked(
+                "data:image/svg+xml;base64,",
+                Base64.encode(bytes(data.svg))
             )
         );
 
-        return string(abi.encodePacked("data:application/json;base64,", json));
-    }
+        string memory attributes = "[";
+        for (uint256 i = 0; i < data.traitTypes.length; i++) {
+            attributes = string(
+                abi.encodePacked(
+                    attributes,
+                    '{"trait_type":"',
+                    data.traitTypes[i],
+                    '","value":"',
+                    data.traitValues[i],
+                    '"}',
+                    i < data.traitTypes.length - 1 ? "," : ""
+                )
+            );
+        }
+        attributes = string(abi.encodePacked(attributes, "]"));
 
-    // View functions to get stored data
-    function getSVG(uint256 tokenId) public view returns (string memory) {
-        require(_exists(tokenId), "Token does not exist");
-        return tokenSVGs[tokenId];
-    }
+        string memory json = string(
+            abi.encodePacked(
+                '{"name":"',
+                data.name,
+                '",',
+                '"description":"',
+                data.description,
+                '",',
+                '"image":"',
+                image,
+                '",',
+                '"attributes":',
+                attributes,
+                "}"
+            )
+        );
 
-    function getMetadata(
-        uint256 tokenId
-    ) public view returns (string memory name, string memory description) {
-        require(_exists(tokenId), "Token does not exist");
-        return (tokenNames[tokenId], tokenDescriptions[tokenId]);
+        return
+            string(
+                abi.encodePacked(
+                    "data:application/json;base64,",
+                    Base64.encode(bytes(json))
+                )
+            );
     }
 }
 
-/*
-	TO MINT NFT:
-		string memory svg = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red"/></svg>';
-		string memory name = "Circle NFT";
-		string memory description = "A simple red circle";
-*/
+// Contract address : 0xE056f17394D7526a2fB2A97164c0D666fa124f79
