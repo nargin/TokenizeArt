@@ -1,5 +1,7 @@
 # Veigar42Stacks NFT Collection
 
+romain bg
+
 ## Project Overview
 
 Veigar42Stacks is an on-chain SVG NFT collection built on the Ethereum blockchain. The project implements the ERC-721 standard to create unique, fully on-chain NFTs with embedded SVG artwork and metadata.
